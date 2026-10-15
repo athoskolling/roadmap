@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roadmap para dev júnior 2027</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --card: #ffffff; --text: #1d1d1f; --muted: #6b6b70;
+    --accent: #2563eb; --ok: #16a34a; --line: #e4e4e7; --danger: #dc2626;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111113; --card: #1c1c1f; --text: #f2f2f3; --muted: #9a9aa2;
+      --accent: #60a5fa; --ok: #4ade80; --line: #2c2c31; --danger: #f87171;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text); line-height: 1.5;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  h2 { font-size: 1.05rem; margin: 0 0 8px; }
+  h3 {
+    font-size: .8rem; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--muted); margin: 16px 0 4px;
+  }
+  .sub, .meta { color: var(--muted); }
+  .sub { margin: 0 0 20px; }
+  .meta { font-size: .9rem; margin: 6px 0 0; }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; padding: 18px; margin-bottom: 16px;
+  }
+  .bar { height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; margin-top: 8px; }
+  .bar > div { height: 100%; width: 0; background: var(--ok); transition: width .3s; }
+  .stage-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+  .stage-head h2 { margin: 0; }
+  .goal { margin: 8px 0 0; }
+  label.item { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; cursor: pointer; }
+  label.item input { margin-top: 5px; width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--ok); }
+  label.item.done span.text { text-decoration: line-through; color: var(--muted); }
+  .tag {
+    display: inline-block; font-size: .7rem; padding: 1px 7px; border-radius: 99px;
+    border: 1px solid var(--line); color: var(--muted); white-space: nowrap; margin-top: 3px;
+  }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+  input[type="password"] {
+    flex: 1; min-width: 220px; padding: 8px 10px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--text); font: inherit;
+  }
+  button {
+    padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--card); color: var(--text); cursor: pointer; font: inherit;
+  }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .status { font-size: .9rem; color: var(--muted); margin: 10px 0 0; min-height: 1.3em; }
+  .status.error { color: var(--danger); }
+  details { margin-top: 10px; }
+  details summary { cursor: pointer; color: var(--muted); }
+  details p { margin: 6px 0 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Roadmap para dev júnior</h1>
+  <p class="sub">Outubro de 2026 a fevereiro de 2027. Marque um item só depois de passar no teste correspondente.</p>
+
+  <section class="card">
+    <strong>Progresso geral: <span id="overall">0%</span></strong>
+    <div class="bar"><div id="overallBar"></div></div>
+  </section>
+
+  <div id="stages"></div>
+
+  <section class="card">
+    <h2>Salvar na nuvem</h2>
+    <p class="meta">
+      O progresso fica salvo neste navegador automaticamente. Para ter uma cópia na nuvem,
+      conecte um Gist secreto do seu GitHub. Ele é gratuito e não precisa de servidor.
+    </p>
+    <div class="controls">
+      <input type="password" id="token" placeholder="Token do GitHub (somente escopo gist)" autocomplete="off">
+      <button id="connect" class="primary">Conectar</button>
+    </div>
+    <div class="controls">
+      <button id="pull">Carregar da nuvem</button>
+      <button id="disconnect">Desconectar</button>
+    </div>
+    <p class="status" id="syncStatus"></p>
+    <details>
+      <summary>Como criar o token</summary>
+      <p class="meta">
+        GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic).
+        Marque apenas o escopo <strong>gist</strong>. O token fica só no localStorage deste navegador
+        e nunca vai para o repositório.
+      </p>
+    </details>
+    <details>
+      <summary>Exportar ou importar manualmente</summary>
+      <div class="controls">
+        <button id="exportBtn">Exportar JSON</button>
+        <input type="file" id="importFile" accept="application/json">
+      </div>
+    </details>
+  </section>
+</main>
+
+<script>
+  const STORAGE_KEY = "roadmap-progress-v1";
+  const GIST_KEY = "roadmap-gist-v1";
+  const FILE_NAME = "roadmap-progress.json";
+  const API = "https://api.github.com";
+
+  const STAGES = [
+    {
+      id: "e0", title: "Diagnóstico e ambiente", weeks: "Semana 1",
+      goal: "Descobrir onde está sua base real antes de estudar o resto.",
+      items: [
+        { id: "e0-1", type: "req", text: "Git, Node.js 22+, VS Code e .NET SDK instalados e funcionando" },
+        { id: "e0-2", type: "req", text: "Repositório deste site publicado no GitHub Pages" },
+        { id: "e0-3", type: "test", text: "Resolver 5 problemas fáceis do LeetCode sem IA, anotando o tempo de cada um e onde travou" },
+        { id: "e0-4", type: "test", text: "Escrever os 3 temas em que mais travou; eles vão guiar as próximas etapas" }
+      ]
+    },
+    {
+      id: "e1", title: "JavaScript e TypeScript", weeks: "Semanas 1 a 4",
+      goal: "Ler e escrever JS moderno sem depender de IA.",
+      items: [
+        { id: "e1-1", type: "req", text: "Funções, arrow functions, arrays (map, filter, reduce), objetos e desestruturação" },
+        { id: "e1-2", type: "req", text: "Promises, async/await e tratamento de erro com try/catch" },
+        { id: "e1-3", type: "req", text: "Módulos (import/export) e TypeScript básico: interfaces, union types e generics simples" },
+        { id: "e1-4", type: "test", text: "Sem IA, escrever uma função que agrupa uma lista de pedidos por status" },
+        { id: "e1-5", type: "test", text: "Buscar dados de uma API pública tratando falha de rede e status HTTP de erro" },
+        { id: "e1-6", type: "test", text: "Explicar por escrito a diferença entre Promise e callback, sem consultar nada" }
+      ]
+    },
+    {
+      id: "e2", title: "Back-end com .NET e SQL", weeks: "Semanas 5 a 9",
+      goal: "Construir uma API com camadas, banco de dados, autenticação e testes.",
+      items: [
+        { id: "e2-1", type: "req", text: "Projeto dividido em camadas (controllers, services, repositories) no TaskFlow ou outro projeto escolhido" },
+        { id: "e2-2", type: "req", text: "CRUD completo com Entity Framework Core e migrations" },
+        { id: "e2-3", type: "req", text: "Autenticação com JWT e rotas protegidas" },
+        { id: "e2-4", type: "req", text: "Consultas SQL com JOIN, GROUP BY e um índice justificado" },
+        { id: "e2-5", type: "test", text: "Testar todos os endpoints com um cliente HTTP (Bruno, Insomnia ou curl)" },
+        { id: "e2-6", type: "test", text: "Pelo menos 10 testes automatizados passando (xUnit)" },
+        { id: "e2-7", type: "test", text: "Criar um endpoint novo sem IA e documentar no README por que cada decisão foi tomada" }
+      ]
+    },
+    {
+      id: "e3", title: "React e integração", weeks: "Semanas 10 a 13",
+      goal: "Conectar uma interface real à sua API.",
+      items: [
+        { id: "e3-1", type: "req", text: "Componentes, props, estado com useState e efeitos com useEffect" },
+        { id: "e3-2", type: "req", text: "Consumo da API com estados de loading e erro visíveis ao usuário" },
+        { id: "e3-3", type: "req", text: "Rotas (React Router) e formulário controlado com validação" },
+        { id: "e3-4", type: "test", text: "Fazer login e criar e listar tarefas pela interface, sem recarregar a página" },
+        { id: "e3-5", type: "test", text: "Escrever a tela de lista do zero, sem copiar de tutorial" },
+        { id: "e3-6", type: "test", text: "Site de portfólio publicado e linkado no currículo" }
+      ]
+    },
+    {
+      id: "e4", title: "Qualidade e deploy", weeks: "Semanas 14 a 16",
+      goal: "Deixar o projeto de qualquer pessoa rodar com poucos comandos e publicado.",
+      items: [
+        { id: "e4-1", type: "req", text: "Dockerfile e docker-compose subindo a API junto com o banco" },
+        { id: "e4-2", type: "req", text: "Pipeline de CI no GitHub Actions rodando build e testes a cada push" },
+        { id: "e4-3", type: "req", text: "API e front publicados (Render, Railway, Azure for Students ou similar)" },
+        { id: "e4-4", type: "test", text: "Clonar o repositório em outra máquina e subir o projeto só seguindo o README" },
+        { id: "e4-5", type: "test", text: "Quebrar um teste de propósito, ver o CI falhar e depois corrigir" }
+      ]
+    },
+    {
+      id: "e5", title: "Candidatura", weeks: "Semanas 15 a 17",
+      goal: "Transformar o que você construiu em entrevistas.",
+      items: [
+        { id: "e5-1", type: "req", text: "Currículo em português e inglês revisado, com links para os projetos" },
+        { id: "e5-2", type: "req", text: "LinkedIn atualizado com o projeto principal" },
+        { id: "e5-3", type: "req", text: "2 a 3 problemas fáceis de algoritmo por semana, só depois da base consolidada" },
+        { id: "e5-4", type: "test", text: "Explicar o projeto principal em 2 minutos, da arquitetura às decisões tomadas" },
+        { id: "e5-5", type: "test", text: "Enviar 10 candidaturas para estágio ou vaga júnior" }
+      ]
+    }
+  ];
+
+  let state = loadLocal();
+  let gist = loadGistConfig();
+  const stageUI = new Map();
+  let syncTimer = null;
+
+  function loadLocal() {
+    try {
+      const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (data && data.checked) return data;
+    } catch (e) { /* ignora dados corrompidos */ }
+    return { checked: {}, updatedAt: null };
+  }
+
+  function loadGistConfig() {
+    try { return JSON.parse(localStorage.getItem(GIST_KEY)); } catch (e) { return null; }
+  }
+
+  function persistLocal() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function touch() {
+    state.updatedAt = new Date().toISOString();
+  }
+
+  function el(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text != null) node.textContent = text;
+    return node;
+  }
+
+  function setStatus(message, isError = false) {
+    const node = document.getElementById("syncStatus");
+    node.textContent = message;
+    node.className = isError ? "status error" : "status";
+  }
+
+  function pct(done, total) {
+    return total ? Math.round((done / total) * 100) : 0;
+  }
+
+  function renderItem(item) {
+    const label = el("label", "item");
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.checked = !!state.checked[item.id];
+    label.classList.toggle("done", input.checked);
+
+    input.addEventListener("change", () => {
+      state.checked[item.id] = input.checked;
+      label.classList.toggle("done", input.checked);
+      touch();
+      persistLocal();
+      updateProgress();
+      scheduleSync();
+    });
+
+    label.append(input, el("span", "tag", item.type === "test" ? "teste" : "requisito"), el("span", "text", item.text));
+    return label;
+  }
+
+  function render() {
+    const root = document.getElementById("stages");
+    root.replaceChildren();
+    stageUI.clear();
+
+    for (const stage of STAGES) {
+      const card = el("section", "card");
+
+      const head = el("div", "stage-head");
+      head.append(el("h2", "", stage.title), el("span", "meta", stage.weeks));
+
+      const bar = el("div", "bar");
+      const fill = el("div");
+      bar.append(fill);
+
+      const count = el("p", "meta", "");
+      card.append(head, el("p", "goal", stage.goal), bar, count);
+
+      for (const [type, heading] of [["req", "Requisitos"], ["test", "Testes"]]) {
+        const items = stage.items.filter((i) => i.type === type);
+        if (!items.length) continue;
+        card.append(el("h3", "", heading));
+        for (const item of items) card.append(renderItem(item));
+      }
+
+      stageUI.set(stage.id, { fill, count });
+      root.append(card);
+    }
+    updateProgress();
+  }
+
+  function updateProgress() {
+    let total = 0;
+    let done = 0;
+    for (const stage of STAGES) {
+      const stageTotal = stage.items.length;
+      const stageDone = stage.items.filter((i) => state.checked[i.id]).length;
+      total += stageTotal;
+      done += stageDone;
+      const ui = stageUI.get(stage.id);
+      if (ui) {
+        ui.fill.style.width = pct(stageDone, stageTotal) + "%";
+        ui.count.textContent = `${stageDone} de ${stageTotal} concluídos`;
+      }
+    }
+    const overall = pct(done, total);
+    document.getElementById("overall").textContent = overall + "%";
+    document.getElementById("overallBar").style.width = overall + "%";
+  }
+
+  /* ---------- Sincronização com Gist secreto do GitHub ---------- */
+
+  async function gh(path, options = {}) {
+    const res = await fetch(API + path, {
+      ...options,
+      headers: {
+        "Accept": "application/vnd.github+json",
+        "Authorization": "token " + gist.token,
+        "Content-Type": "application/json",
+      },
+    });
+    if (!res.ok) {
+      throw new Error(res.status === 401 ? "token inválido ou sem escopo gist" : "GitHub respondeu " + res.status);
+    }
+    return res.json();
+  }
+
+  function scheduleSync() {
+    if (!gist || !gist.token) return;
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(pushToCloud, 800);
+  }
+
+  async function pushToCloud() {
+    if (!gist || !gist.token) return;
+    setStatus("Salvando na nuvem…");
+    const content = JSON.stringify(state, null, 2);
+    try {
+      if (gist.gistId) {
+        await gh("/gists/" + gist.gistId, {
+          method: "PATCH",
+          body: JSON.stringify({ files: { [FILE_NAME]: { content } } }),
+        });
+      } else {
+        const created = await gh("/gists", {
+          method: "POST",
+          body: JSON.stringify({
+            description: "Roadmap dev júnior - progresso",
+            public: false,
+            files: { [FILE_NAME]: { content } },
+          }),
+        });
+        gist.gistId = created.id;
+        localStorage.setItem(GIST_KEY, JSON.stringify(gist));
+      }
+      setStatus("Salvo na nuvem às " + new Date().toLocaleTimeString("pt-BR"));
+    } catch (e) {
+      setStatus("Não consegui salvar na nuvem (" + e.message + "). Seu progresso continua salvo neste navegador.", true);
+    }
+  }
+
+  async function pullFromCloud() {
+    if (!gist || !gist.gistId) return null;
+    setStatus("Carregando da nuvem…");
+    try {
+      const data = await gh("/gists/" + gist.gistId);
+      const file = data.files && data.files[FILE_NAME];
+      if (!file) throw new Error("arquivo de progresso não encontrado no Gist");
+      const cloud = JSON.parse(file.content);
+      if (!cloud || !cloud.checked) throw new Error("conteúdo do Gist inválido");
+      return cloud;
+    } catch (e) {
+      setStatus("Não consegui carregar da nuvem (" + e.message + ").", true);
+      return null;
+    }
+  }
+
+  function adoptCloudIfNewer(cloud) {
+    if (cloud && cloud.updatedAt && (!state.updatedAt || cloud.updatedAt > state.updatedAt)) {
+      state = cloud;
+      persistLocal();
+      render();
+      return true;
+    }
+    return false;
+  }
+
+  /* ---------- Eventos ---------- */
+
+  document.getElementById("connect").addEventListener("click", async () => {
+    const token = document.getElementById("token").value.trim();
+    if (!token) {
+      setStatus("Cole o token primeiro.", true);
+      return;
+    }
+    gist = { token, gistId: gist ? gist.gistId : null };
+    localStorage.setItem(GIST_KEY, JSON.stringify(gist));
+    document.getElementById("token").value = "";
+
+    if (gist.gistId) {
+      const cloud = await pullFromCloud();
+      if (cloud) {
+        if (adoptCloudIfNewer(cloud)) setStatus("Conectado. Progresso mais recente carregado da nuvem.");
+        else { setStatus("Conectado. Seu progresso local é o mais recente."); pushToCloud(); }
+      }
+    } else {
+      await pushToCloud();
+    }
+  });
+
+  document.getElementById("pull").addEventListener("click", async () => {
+    const cloud = await pullFromCloud();
+    if (cloud) {
+      state = cloud;
+      persistLocal();
+      render();
+      setStatus("Progresso carregado da nuvem.");
+    }
+  });
+
+  document.getElementById("disconnect").addEventListener("click", () => {
+    localStorage.removeItem(GIST_KEY);
+    gist = null;
+    setStatus("Desconectado. O progresso continua salvo neste navegador.");
+  });
+
+  document.getElementById("exportBtn").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = FILE_NAME;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+
+  document.getElementById("importFile").addEventListener("change", async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    try {
+      const data = JSON.parse(await file.text());
+      if (!data || !data.checked) throw new Error("formato inválido");
+      state = data;
+      touch();
+      persistLocal();
+      render();
+      scheduleSync();
+      setStatus("Progresso importado.");
+    } catch (e) {
+      setStatus("Arquivo inválido: " + e.message, true);
+    }
+  });
+
+  /* ---------- Inicialização ---------- */
+
+  async function init() {
+    render();
+    if (gist && gist.token && gist.gistId) {
+      const cloud = await pullFromCloud();
+      if (cloud) {
+        adoptCloudIfNewer(cloud);
+        setStatus("Conectado à nuvem.");
+      }
+    } else if (gist && gist.token) {
+      setStatus("Conectado. Salve algum item para criar o Gist.");
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
