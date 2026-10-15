@@ -31,6 +31,18 @@ em um Gist secreto do GitHub.
 O token fica somente no `localStorage` do seu navegador. Ele nunca é enviado para o repositório.
 Se usar um computador que não é seu, clique em **Desconectar** ao terminar.
 
+## O que o site faz
+
+- **Agora:** destaca o próximo item que falta.
+- **Esta semana:** com a data de início, mostra a semana atual, o foco e se você está em dia.
+- **Revisar hoje:** cada item concluído volta para revisão depois de 7 e de 30 dias
+  ("preciso rever" reagenda para daqui a 3 dias).
+- **Constância:** sequência de dias ativos e um histórico das últimas 18 semanas.
+- **Seu registro:** notas e link da sua solução em cada item.
+- **Modo escuro:** segue o sistema ou o botão no canto da tela.
+
+Tudo isso é salvo no navegador e, se você conectar o token, no Gist.
+
 ## Estrutura
 
 - `index.html`: interface, páginas de detalhe (via `#/item/<id>`), efeitos e sincronização.
