@@ -33,8 +33,12 @@ Se usar um computador que não é seu, clique em **Desconectar** ao terminar.
 
 ## Estrutura
 
-- `index.html`: a página inteira (dados das etapas, interface e sincronização).
+- `index.html`: interface, páginas de detalhe (via `#/item/<id>`), efeitos e sincronização.
+- `content.js`: todo o conteúdo do roadmap. Requisitos têm explicação, passos, exemplo,
+  critérios e armadilhas. Testes têm enunciado, critérios, dicas progressivas e solução
+  de referência (escondida até você confirmar que tentou).
 - `README.md`: este arquivo.
 
-Para editar requisitos ou testes, altere o array `STAGES` dentro do `index.html`.
-Cada item precisa de um `id` único, que é a chave usada para guardar o progresso.
+Para editar requisitos ou testes, altere o `content.js`.
+Cada item precisa de um `id` único, que é a chave usada para guardar o progresso:
+não mude o `id` de um item que você já marcou.
